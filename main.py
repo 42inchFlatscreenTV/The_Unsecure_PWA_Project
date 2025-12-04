@@ -4,7 +4,8 @@ from flask import request
 from flask import redirect
 from flask_cors import CORS
 import user_management as dbHandler
-import security as sec
+import security
+import data_handler as sanitise
 
 # Code snippet for logging a message
 # app.logger.critical("message")
@@ -21,7 +22,7 @@ def addFeedback():
         return redirect(url, code=302)
     if request.method == "POST":
         feedback = request.form["feedback"]
-        dbHandler.insertFeedback(feedback)
+        dbHandler.insertFeedback(sanitise.make_web_safe(feedback))
         dbHandler.listFeedback()
         return render_template("/success.html", state=True, value="Back")
     else:
@@ -38,10 +39,9 @@ def signup():
         username = request.form["username"]
         password = request.form["password"]
         DoB = request.form["dob"]
-        salt = sec.get_salt()
-        print(salt)
 
-        dbHandler.insertUser(username, password, DoB)
+        password_hash, password_salt = security.hash_password(password)
+        dbHandler.insertUser(username, password_hash, DoB, password_salt)
         return render_template("/index.html")
     else:
         return render_template("/signup.html")

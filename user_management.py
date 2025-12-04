@@ -1,12 +1,16 @@
 import sqlite3 as sql
 import time
 import random
+import bcrypt
 
 
-def insertUser(username, password, DoB):
+def insertUser(username, hash, DoB, salt):
     con = sql.connect("database_files/database.db")
     cur = con.cursor()
-    cur.execute("SELECT * FROM users WHERE username == ? AND password == ?", (username))
+    cur.execute(
+        "INSERT INTO users (username,password,dateOfBirth,salt) VALUES (?,?,?,?)",
+        (username, hash, DoB, salt),
+    )
     con.commit()
     con.close()
 
@@ -17,33 +21,29 @@ def retrieveUsers(username, password):
     # This statement is looking up where the password matches only
 
     cur.execute(
-        "SELECT * FROM users WHERE username == ? AND password == ?",
-        (username, password),
+        "SELECT password FROM users WHERE username == ?",
+        (username,),
     )
-    # THIS LINE IS VULNERABLE
+
     if cur.fetchone() == None:
         con.close()
         return False
     else:
-        # cur.execute(
-        # "SELECT * FROM users WHERE username == ? AND password == ?",
-        # (username, password),)  # THIS LINE IS VULNERABLE
-
-        # Plain text log of visitor count as requested by Unsecure PWA management
-        with open("visitor_log.txt", "r") as file:
-            number = int(file.read().strip())
-            number += 1
-
-        with open("visitor_log.txt", "w") as file:
-            file.write(str(number))
-        # Simulate response time of heavy app for testing purposes
-        time.sleep(random.randint(80, 90) / 1000)
-        # if cur.fetchone() == None:
-        # con.close()
-        # return False
-        # else:
+        hashed_password = cur.fetchone()[0]
+        check_hash = bcrypt.checkpw(password.encode(), hashed_password)
         con.close()
-        return True
+
+        if check_hash:
+            with open("visitor_log.txt", "r") as file:
+                number = int(file.read().strip())
+                number += 1
+
+            with open("visitor_log.txt", "w") as file:
+                file.write(str(number))
+
+            return True
+
+        return False
 
 
 def insertFeedback(feedback):

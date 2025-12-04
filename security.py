@@ -1,12 +1,13 @@
 import bcrypt
 
-# function to hash
+
+def gen_salt():
+    salt = bcrypt.gensalt()
+    return salt
 
 
-def hash(password):
-    return True
+def hash_password(password):
+    salt = gen_salt()
+    hash = bcrypt.hashpw(password.encode(), salt)
 
-
-# function to salt
-def get_salt():
-    return bcrypt.gensalt()
+    return hash, salt
